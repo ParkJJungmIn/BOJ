@@ -1,60 +1,68 @@
-Y,X = map(int, input().split())
+from collections import defaultdict, deque
 
+X,Y = map(int,input().split())
+
+# board = [ list(map(int,input().split())) for _ in range(X)]
 board = []
-checked = []
+checked = set()
 
-for y in range(Y):
-    tmp = list(map(int,input().split() ))
-    checked += [ (x,y) for x,i in enumerate(tmp) if i > 0]
-    board.append( tmp )
-
-from collections import deque
-
-def bfs( x,y ):
-
-    stack = deque([ (x,y) ])
-    visited[y][x] = 1
-    after = []
-    while stack:
-        tmpX, tmpY = stack.popleft()
-        point = 0
-        for m_x, m_y in move:
-            m_x += tmpX
-            m_y += tmpY
-
-            if 0 <= m_x < X and 0 <= m_y < Y:
-                if board[m_y][m_x] == 0:
-                    point += 1
-                elif not visited[m_y][m_x] and board[m_y][m_x]:
-                    stack.append( (m_x,m_y) )
-                    visited[m_y][m_x] = 1
-
-        if point > 0 :
-            after.append( (tmpX,tmpY,point) )
-
-    for ax, ay, point in after :
-        board[ay][ax] = max(0,board[ay][ax]-point )
-
-    return 1
+for x in range(X):
+    row = list(map(int,input().split()))
+    board.append(row)
+    for y_i,y_v in enumerate(row):
+        if y_v != 0:
+            checked.add( ( x,y_i ) )
 
 
-move = [ (0,1) , (1,0) , (-1,0), (0,-1)]
+move = [ (0,1), (1,0), (-1,0), (0,-1)]
 
-year = 0
-while checked: 
-    visited = [ [0] * X for _ in range(Y)]
-    delete = []
-    count = 0
-    for c_x, c_y in checked:
-        if  board[c_y][c_x] and not visited[c_y][c_x] :
-            count += bfs(c_x,c_y)
-        if not board[c_y][c_x]:
-            delete.append( (c_x,c_y) )
+def bfs( checked ):
+    queue = deque( [list(checked)[0]] )
+    visited =set()
+  
+    while queue:
+        x,y = queue.pop()
+        
+        for tmp_x, tmp_y in move:
+            tmp_x += x
+            tmp_y += y
+            
+            if (tmp_x, tmp_y) in checked and (tmp_x, tmp_y) not in visited :
+                visited.add( (tmp_x, tmp_y) )
+                queue.appendleft( (tmp_x , tmp_y ))
+
+    return len(checked) == len(visited)
+
+
+answer = 0
+while True:
     
-    if count >= 2:
-        print(year)
-        exit(0)
-    year += 1
-    checked = sorted(list(set(checked) - set(delete)))
+    # True면 아직 하나로 뭉쳐있다라는 뜻
+    if not bfs(checked):
+        break
 
-print(0)
+
+    count = defaultdict(int)
+    remove = set()
+    for tmp_x, tmp_y in list(checked):
+        count[(tmp_x,tmp_y)] = board[tmp_x][tmp_y]
+
+        for move_x, move_y in move:
+            move_x += tmp_x
+            move_y += tmp_y
+            if 0<=move_x<X and 0<=move_y<Y and board[move_x][move_y] == 0 and count[(tmp_x,tmp_y)] > 0:
+                count[(tmp_x,tmp_y)] -= 1
+            
+
+    for key,value in count.items() :
+        if value == 0:
+            remove.add( key )
+        board[key[0]][key[1]] = value
+    
+    checked = checked-remove
+    if not checked:
+        answer = 0
+        break
+    answer += 1
+
+print(answer)
